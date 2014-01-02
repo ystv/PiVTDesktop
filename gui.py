@@ -142,3 +142,48 @@ class CorePanel ( wx.Panel ):
 		event.Skip()
 	
 
+###########################################################################
+## Class dlgConnectOptions
+###########################################################################
+
+class dlgConnectOptions ( wx.Dialog ):
+	
+	def __init__( self, parent ):
+		wx.Dialog.__init__ ( self, parent, id = wx.ID_ANY, title = u"Connection Options", pos = wx.DefaultPosition, size = wx.Size( 234,130 ), style = wx.DEFAULT_DIALOG_STYLE )
+		
+		self.SetSizeHintsSz( wx.DefaultSize, wx.DefaultSize )
+		
+		Sizer = wx.GridBagSizer( 0, 0 )
+		Sizer.SetFlexibleDirection( wx.BOTH )
+		Sizer.SetNonFlexibleGrowMode( wx.FLEX_GROWMODE_SPECIFIED )
+		
+		self.txtServer = wx.TextCtrl( self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0 )
+		Sizer.Add( self.txtServer, wx.GBPosition( 0, 1 ), wx.GBSpan( 1, 1 ), wx.ALL, 5 )
+		
+		self.txtPort = wx.TextCtrl( self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.DefaultSize, 0 )
+		Sizer.Add( self.txtPort, wx.GBPosition( 1, 1 ), wx.GBSpan( 1, 1 ), wx.ALL, 5 )
+		
+		self.btnOk = wx.Button( self, wx.ID_OK, u"OK", wx.DefaultPosition, wx.DefaultSize, 0 )
+		Sizer.Add( self.btnOk, wx.GBPosition( 2, 0 ), wx.GBSpan( 1, 1 ), wx.ALL, 5 )
+		
+		self.btnCancel = wx.Button( self, wx.ID_CANCEL, u"Cancel", wx.DefaultPosition, wx.DefaultSize, 0 )
+		Sizer.Add( self.btnCancel, wx.GBPosition( 2, 1 ), wx.GBSpan( 1, 1 ), wx.ALL, 5 )
+		
+		self.lblHost = wx.StaticText( self, wx.ID_ANY, u"Server:", wx.DefaultPosition, wx.DefaultSize, wx.ALIGN_RIGHT )
+		self.lblHost.Wrap( -1 )
+		Sizer.Add( self.lblHost, wx.GBPosition( 0, 0 ), wx.GBSpan( 1, 1 ), wx.ALL|wx.EXPAND, 5 )
+		
+		self.lblPort = wx.StaticText( self, wx.ID_ANY, u"Port:", wx.DefaultPosition, wx.DefaultSize, wx.ALIGN_RIGHT )
+		self.lblPort.Wrap( -1 )
+		Sizer.Add( self.lblPort, wx.GBPosition( 1, 0 ), wx.GBSpan( 1, 1 ), wx.ALL|wx.EXPAND, 5 )
+		
+		
+		self.SetSizer( Sizer )
+		self.Layout()
+		
+		self.Centre( wx.BOTH )
+	
+	def __del__( self ):
+		pass
+	
+
