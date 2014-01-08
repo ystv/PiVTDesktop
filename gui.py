@@ -17,7 +17,7 @@ import wx.xrc
 class CorePanel ( wx.Panel ):
 	
 	def __init__( self, parent ):
-		wx.Panel.__init__ ( self, parent, id = wx.ID_ANY, pos = wx.DefaultPosition, size = wx.Size( 600,300 ), style = wx.TAB_TRAVERSAL )
+		wx.Panel.__init__ ( self, parent, id = wx.ID_ANY, pos = wx.DefaultPosition, size = wx.Size( 600,352 ), style = wx.TAB_TRAVERSAL )
 		
 		mainSizer = wx.BoxSizer( wx.HORIZONTAL )
 		
@@ -69,28 +69,36 @@ class CorePanel ( wx.Panel ):
 		self.chkAuto = wx.CheckBox( self, wx.ID_ANY, u"Auto-play next item", wx.Point( -1,-1 ), wx.DefaultSize, 0 )
 		rightSizer.Add( self.chkAuto, wx.GBPosition( 2, 0 ), wx.GBSpan( 1, 2 ), wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 5 )
 		
-		self.m_staticText1 = wx.StaticText( self, wx.ID_ANY, u"00:00", wx.DefaultPosition, wx.Size( -1,80 ), wx.ALIGN_CENTRE )
-		self.m_staticText1.Wrap( -1 )
-		self.m_staticText1.SetFont( wx.Font( 40, 70, 90, 90, False, wx.EmptyString ) )
-		self.m_staticText1.SetMaxSize( wx.Size( -1,50 ) )
+		self.lblCountdown = wx.StaticText( self, wx.ID_ANY, u"00:00", wx.DefaultPosition, wx.Size( -1,80 ), wx.ALIGN_CENTRE )
+		self.lblCountdown.Wrap( -1 )
+		self.lblCountdown.SetFont( wx.Font( 40, 70, 90, 90, False, wx.EmptyString ) )
+		self.lblCountdown.SetMaxSize( wx.Size( -1,50 ) )
 		
-		rightSizer.Add( self.m_staticText1, wx.GBPosition( 3, 0 ), wx.GBSpan( 1, 2 ), wx.ALL|wx.EXPAND, 5 )
+		rightSizer.Add( self.lblCountdown, wx.GBPosition( 3, 0 ), wx.GBSpan( 1, 2 ), wx.ALL|wx.EXPAND, 5 )
 		
 		self.lblPlayLabel = wx.StaticText( self, wx.ID_ANY, u"Now Playing:", wx.DefaultPosition, wx.DefaultSize, wx.ALIGN_RIGHT )
 		self.lblPlayLabel.Wrap( -1 )
 		rightSizer.Add( self.lblPlayLabel, wx.GBPosition( 5, 0 ), wx.GBSpan( 1, 1 ), wx.ALL|wx.EXPAND, 5 )
 		
 		self.lblPlaying = wx.StaticText( self, wx.ID_ANY, u"None", wx.DefaultPosition, wx.DefaultSize, 0 )
-		self.lblPlaying.Wrap( -1 )
-		rightSizer.Add( self.lblPlaying, wx.GBPosition( 5, 1 ), wx.GBSpan( 1, 1 ), wx.ALL, 5 )
+		self.lblPlaying.Wrap( 100 )
+		rightSizer.Add( self.lblPlaying, wx.GBPosition( 5, 1 ), wx.GBSpan( 1, 2 ), wx.ALL, 5 )
 		
 		self.lblLoadLabel = wx.StaticText( self, wx.ID_ANY, u"Loaded:", wx.DefaultPosition, wx.DefaultSize, wx.ALIGN_RIGHT )
 		self.lblLoadLabel.Wrap( -1 )
 		rightSizer.Add( self.lblLoadLabel, wx.GBPosition( 6, 0 ), wx.GBSpan( 1, 1 ), wx.ALL|wx.EXPAND, 5 )
 		
 		self.lblLoaded = wx.StaticText( self, wx.ID_ANY, u"None", wx.DefaultPosition, wx.DefaultSize, 0 )
-		self.lblLoaded.Wrap( -1 )
+		self.lblLoaded.Wrap( 100 )
 		rightSizer.Add( self.lblLoaded, wx.GBPosition( 6, 1 ), wx.GBSpan( 1, 1 ), wx.ALL, 5 )
+		
+		self.lblConnectedLabel = wx.StaticText( self, wx.ID_ANY, u"Status", wx.DefaultPosition, wx.DefaultSize, wx.ALIGN_RIGHT )
+		self.lblConnectedLabel.Wrap( -1 )
+		rightSizer.Add( self.lblConnectedLabel, wx.GBPosition( 7, 0 ), wx.GBSpan( 1, 1 ), wx.ALL|wx.EXPAND, 5 )
+		
+		self.lblConnected = wx.StaticText( self, wx.ID_ANY, u"Not Connected", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.lblConnected.Wrap( 100 )
+		rightSizer.Add( self.lblConnected, wx.GBPosition( 7, 1 ), wx.GBSpan( 1, 1 ), wx.ALL|wx.EXPAND, 5 )
 		
 		
 		rightSizer.AddGrowableCol( 0 )
