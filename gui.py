@@ -72,7 +72,7 @@ class CorePanel ( wx.Panel ):
 		rightSizer.Add( self.chkAuto, wx.GBPosition( 2, 1 ), wx.GBSpan( 1, 3 ), wx.ALL|wx.ALIGN_CENTER_HORIZONTAL|wx.EXPAND, 5 )
 		
 		self.lblCountdown = wx.TextCtrl( self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.Size( -1,80 ), wx.TE_CENTRE|wx.TE_READONLY|wx.NO_BORDER )
-		self.lblCountdown.SetFont( wx.Font( 40, 70, 90, 90, False, wx.EmptyString ) )
+		self.lblCountdown.SetFont( wx.Font( 60, 70, 90, 90, False, wx.EmptyString ) )
 		self.lblCountdown.SetForegroundColour( wx.SystemSettings.GetColour( wx.SYS_COLOUR_CAPTIONTEXT ) )
 		self.lblCountdown.SetBackgroundColour( wx.SystemSettings.GetColour( wx.SYS_COLOUR_BTNFACE ) )
 		self.lblCountdown.SetMaxSize( wx.Size( -1,80 ) )
@@ -189,6 +189,49 @@ class dlgConnectOptions ( wx.Dialog ):
 		self.lblPort.Wrap( -1 )
 		Sizer.Add( self.lblPort, wx.GBPosition( 1, 0 ), wx.GBSpan( 1, 1 ), wx.ALL|wx.EXPAND, 5 )
 		
+		
+		self.SetSizer( Sizer )
+		self.Layout()
+		
+		self.Centre( wx.BOTH )
+	
+	def __del__( self ):
+		pass
+	
+
+###########################################################################
+## Class dlgAddItems
+###########################################################################
+
+class dlgAddItems ( wx.Dialog ):
+	
+	def __init__( self, parent ):
+		wx.Dialog.__init__ ( self, parent, id = wx.ID_ANY, title = u"Add Video", pos = wx.DefaultPosition, size = wx.Size( 376,112 ), style = wx.DEFAULT_DIALOG_STYLE )
+		
+		self.SetSizeHintsSz( wx.DefaultSize, wx.DefaultSize )
+		
+		Sizer = wx.GridBagSizer( 5, 5 )
+		Sizer.SetFlexibleDirection( wx.BOTH )
+		Sizer.SetNonFlexibleGrowMode( wx.FLEX_GROWMODE_SPECIFIED )
+		
+		Sizer.SetMinSize( wx.Size( 350,112 ) ) 
+		ddVideoListChoices = []
+		self.ddVideoList = wx.Choice( self, wx.ID_ANY, wx.DefaultPosition, wx.DefaultSize, ddVideoListChoices, wx.CB_SORT )
+		self.ddVideoList.SetSelection( 0 )
+		Sizer.Add( self.ddVideoList, wx.GBPosition( 0, 1 ), wx.GBSpan( 1, 1 ), wx.ALL|wx.ALIGN_CENTER_VERTICAL|wx.EXPAND, 5 )
+		
+		self.lblSelectFile = wx.StaticText( self, wx.ID_ANY, u"Select file:", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.lblSelectFile.Wrap( -1 )
+		Sizer.Add( self.lblSelectFile, wx.GBPosition( 0, 0 ), wx.GBSpan( 1, 1 ), wx.ALL|wx.ALIGN_CENTER_VERTICAL, 5 )
+		
+		self.btnAdd = wx.Button( self, wx.ID_OK, u"Add", wx.DefaultPosition, wx.DefaultSize, 0 )
+		Sizer.Add( self.btnAdd, wx.GBPosition( 1, 0 ), wx.GBSpan( 1, 1 ), wx.ALL, 5 )
+		
+		self.btnCancel = wx.Button( self, wx.ID_CANCEL, u"Cancel", wx.DefaultPosition, wx.DefaultSize, 0 )
+		Sizer.Add( self.btnCancel, wx.GBPosition( 1, 1 ), wx.GBSpan( 1, 1 ), wx.ALL, 5 )
+		
+		
+		Sizer.AddGrowableCol( 1 )
 		
 		self.SetSizer( Sizer )
 		self.Layout()

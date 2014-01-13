@@ -1,13 +1,15 @@
 import wx
 import os
 import threading
+import ctypes
+from time import sleep
+
 
 import gui
 
 from playlist import Playlist
 from pivtcontrol import PiVTControl
-from gui import dlgConnectOptions
-from time import sleep
+from gui import dlgConnectOptions, dlgAddItems
 
 DEFAULTSERVER = 'sn-pi:9815'
 
@@ -16,6 +18,8 @@ runflag = True
 class MainWindow(wx.Frame):
     def __init__(self):
         wx.Frame.__init__(self, None, title="PiVT Desktop", size=(600,400))
+        favicon = wx.Icon('PiVT_icon.ico', wx.BITMAP_TYPE_ICO)
+        wx.Frame.SetIcon(self, favicon)
         self.mp = None
         self.SetupMenus()
              
@@ -163,6 +167,7 @@ class MainWindow(wx.Frame):
         self.mp.lblLoaded.SetLabel("None")
         self.mp.btnPlay.Enable(False)
         self.mp.btnStop.Enable(False)
+        self.mp.btnAdd.Enable(False)
         
         self.mp.statusthread = None
         self.mp.clock = -1
@@ -208,6 +213,43 @@ class MainPanel(gui.CorePanel):
         
         # Placeholder for networking
         self.networkconn = None
+        
+    def StatusHighlightSet(self):
+        '''Run through playlist and highlight loaded and playing rows'''
+        try:
+            if self.networkconn.connected == True:
+                playing = self.networkconn.playing
+                loaded = self.networkconn.loaded
+            else:
+                playing = ""
+                loaded = ""
+        except AttributeError:
+            loaded = ""
+            playing = ""
+        
+        # Clear all markers (complicated to prevent flicker from unneeded updates)
+        for i in range(0, self.lstPlaylist.GetItemCount()):
+            
+            if self.lstPlaylist.GetItemText(i) == playing:
+                if i == self.lstPlaylist.GetFirstSelected():
+                    self.lstPlaylist.SetItemTextColour(i, 'red')
+                    self.lstPlaylist.SetItemBackgroundColour(i, 'white')
+                else:
+                    self.lstPlaylist.SetItemBackgroundColour(i, 'red')
+                    self.lstPlaylist.SetItemTextColour(i, 'black')
+                    
+            elif self.lstPlaylist.GetItemText(i) == loaded:
+                if i == self.lstPlaylist.GetFirstSelected():
+                    self.lstPlaylist.SetItemTextColour(i, 'green')
+                    self.lstPlaylist.SetItemBackgroundColour(i, 'white')
+                else:
+                    self.lstPlaylist.SetItemBackgroundColour(i, 'green')
+                    self.lstPlaylist.SetItemTextColour(i, 'black')
+                    
+            elif (self.lstPlaylist.GetItemTextColour(i) != 'black' or 
+                self.lstPlaylist.GetItemBackgroundColour(i) != 'white'):
+                    self.lstPlaylist.SetItemTextColour(i, 'black')
+                    self.lstPlaylist.SetItemBackgroundColour(i, 'white')
     
     def PlaylistRefresh(self):
         # Clear existing playlist items
@@ -218,12 +260,15 @@ class MainPanel(gui.CorePanel):
             count = self.lstPlaylist.GetItemCount()
             self.lstPlaylist.InsertStringItem(count, filename)
             self.lstPlaylist.SetStringItem(count, 1, str(duration))
-        
+            self.lstPlaylist.SetItemTextColour(count, (255,0,0))
+  
+
         # Set selected item
         if self.playlist.index >= 0:
             self.lstPlaylist.Select(self.playlist.index, True)
         
         # Configure playing/loaded markers
+        self.StatusHighlightSet()
         
     def PollStatus(self):
         time = 9.9
@@ -276,6 +321,8 @@ class MainPanel(gui.CorePanel):
         self.statusthread = threading.Thread(target=self.PollStatus)
         self.statusthread.start()
         
+        self.btnAdd.Enable(True)
+        
         # Set the loaded item
         self.OnPLSelect(None)
         
@@ -290,6 +337,9 @@ class MainPanel(gui.CorePanel):
                 if self.clockthread == None:
                     self.clockthread = threading.Thread(target=self.UpdateCountdown)
                     self.clockthread.start()
+                    
+            if self.chkAuto.Value == True and self.networkconn.loaded == "":
+                self.OnPlayUpdateFromList()
                 
         else:
             self.lblPlaying.SetLabel("None")
@@ -306,8 +356,9 @@ class MainPanel(gui.CorePanel):
         else:
             self.lblLoaded.SetLabel("None")
             self.btnPlay.Enable(False)
-
-        self.chkAuto.Value = self.networkconn.automode
+            
+        # Fix red/green highlights
+        self.StatusHighlightSet()
         
     def OnMoveUp(self, event):
         if self.lstPlaylist.SelectedItemCount > 0:
@@ -338,10 +389,15 @@ class MainPanel(gui.CorePanel):
                         if self.networkconn.loaded != self.playlist.getCurrentItemName():
                             self.networkconn.load(self.playlist.getCurrentItemName())
                             self.lblLoaded.SetLabel("Please Wait...")
+                            self.btnPlay.Enable(False)
                         self.chkAuto.SetLabel("Auto-play selected item")
+                    else:
+                        self.GetParent().OnDisconnectInstruction()
+                        raise AttributeError
                 except AttributeError:
                     pass
-
+            else:
+                self.playlist.index = -1
         else:
             self.playlist.index = -1
             
@@ -372,6 +428,10 @@ class MainPanel(gui.CorePanel):
                 item, duration = self.playlist.getNextItem()
                 self.networkconn.load(item)
                 self.lblLoaded.SetLabel('Please Wait...')
+                self.btnPlay.Enable(False)
+                
+            # Update the status markers
+            self.StatusHighlightSet()
         else:
             self.lblLoaded.SetLabel("None")
             self.btnPlay.Enable(False)
@@ -385,8 +445,6 @@ class MainPanel(gui.CorePanel):
         self.lblPlaying.SetLabel(self.networkconn.playing)
         self.btnStop.Enable(True)
         self.chkAuto.Enable(True)
-        
-        # Set the red blob
         
         # Update playing statuses from playlist
         self.OnPlayUpdateFromList()
@@ -402,6 +460,7 @@ class MainPanel(gui.CorePanel):
         self.chkAuto.Value = False
         self.chkAuto.Enable(False)
         self.networkconn.setauto(False)
+        self.StatusHighlightSet()
         
     def OnchkAutoChange(self, event):
         try:
@@ -412,13 +471,39 @@ class MainPanel(gui.CorePanel):
                     item, duration = self.playlist.getNextItem()
                     self.networkconn.load(item)
                     self.lblLoaded.SetLabel('Please Wait...')
+                    self.btnPlay.Enable(False)
             else:
+                self.GetParent().OnDisconnectInstruction()
                 raise AttributeError
         except AttributeError:
             self.chkAuto.Enable(False)
             self.chkAuto.Value = False
             
+            
+    def OnAdd(self, event):
+        dlgAdd = dlgAddItems(self)
+        print("Launching")
+        filelist = self.networkconn.getfilelist()
+        print("Listed")
+        for item, duration in filelist:
+            dlgAdd.ddVideoList.Append(item)
+        print ("Append")           
         
+        if dlgAdd.ShowModal() == wx.ID_OK:
+            if self.lstPlaylist.SelectedItemCount > 0:
+                newindex = self.playlist.index
+            else:
+                newindex = -1
+                
+            for item, duration in filelist:
+                if item == dlgAdd.ddVideoList.GetStringSelection():
+                    self.playlist.addItem(item, int(round(duration)), )
+                    self.PlaylistRefresh()
+
+
+myappid = 'YSTV.PiVT.PiVTDesktop.2.0' # arbitrary string
+ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+       
 app = wx.App(False)
 frame = MainWindow()
 panel = MainPanel(frame)

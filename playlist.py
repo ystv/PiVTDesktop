@@ -6,7 +6,7 @@ class Playlist(object):
     """
     def __init__(self):
         self.playlist = []
-        self.index = 0
+        self.index = -1
         
     def loadPlaylist(self, filename):
         tree = ElTree.parse(filename)

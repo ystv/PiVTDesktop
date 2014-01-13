@@ -17,6 +17,7 @@ class PiVTControl(asynchat.async_chat):
 	loaded = ""
 	automode = False
 	connected = False
+	filelist = None
 	
 	def __init__(self, server, conn_cb, data_cb):
 		splits = server.split(':')
@@ -77,6 +78,24 @@ class PiVTControl(asynchat.async_chat):
 			self.push('m \r\n')
 			self.automode = on
 			sleep(0.5)			
+			
+	def getfilelist(self):
+		# Prepare for new update
+		self.updateready = False
+		self.filelist = []
+		
+		self.push('g \r\n')
+		
+		# Wait for file listing to complete in network thread
+		while self.updateready == False:
+			sleep(0.1)
+			
+		# Reset flag marking completion status
+		self.updateready = None
+		
+		print(repr(self.filelist))
+		
+		return self.filelist
 	
 	def handle_connect(self):
 		print "Connected!"
@@ -137,6 +156,8 @@ class PiVTControl(asynchat.async_chat):
 		elif message[0].startswith('204'):
 			splits = shlex.split(message[0])
 			
+			self.get_info()
+			
 			if splits[len(splits)-1] == 'True':
 				self.automode = True
 			else:
@@ -150,8 +171,21 @@ class PiVTControl(asynchat.async_chat):
 				numbers = float(splits[3])
 				self.data_cb(numbers)
 		
+		elif message[0].startswith('205'):
+			# 205 File listing complete
+			self.updateready = True
+			
+		elif message[0].startswith('206'):
+			splits = shlex.split(message[0])
+			
+			self.filelist.append((splits[1], float(splits[2])))
+		
 		elif message[0].startswith('Auto Enabled set to'):
-			pass	
+			if shlex.split(message[0])[4] == True:
+				self.automode = True
+			else:
+				self.automode = False
+
 		else:
 			wx.MessageBox(msg, 'Error', wx.ICON_WARNING | wx.OK)	
 			
