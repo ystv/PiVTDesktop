@@ -56,32 +56,35 @@ class CorePanel ( wx.Panel ):
 		rightSizer.SetNonFlexibleGrowMode( wx.FLEX_GROWMODE_SPECIFIED )
 		
 		rightSizer.SetMinSize( wx.Size( 300,-1 ) ) 
-		self.btnPlay = wx.Button( self, wx.ID_ANY, u"Play", wx.DefaultPosition, wx.Size( -1,50 ), 0 )
+		self.btnPlay = wx.Button( self, wx.ID_ANY, u"Play", wx.DefaultPosition, wx.Size( 120,50 ), 0 )
 		self.btnPlay.Enable( False )
 		
-		rightSizer.Add( self.btnPlay, wx.GBPosition( 1, 0 ), wx.GBSpan( 1, 1 ), wx.ALL|wx.EXPAND, 5 )
+		rightSizer.Add( self.btnPlay, wx.GBPosition( 1, 0 ), wx.GBSpan( 1, 2 ), wx.ALL, 5 )
 		
-		self.btnStop = wx.Button( self, wx.ID_ANY, u"Stop", wx.DefaultPosition, wx.DefaultSize, 0 )
+		self.btnStop = wx.Button( self, wx.ID_ANY, u"Stop", wx.DefaultPosition, wx.Size( 120,50 ), 0 )
 		self.btnStop.Enable( False )
 		
-		rightSizer.Add( self.btnStop, wx.GBPosition( 1, 1 ), wx.GBSpan( 1, 1 ), wx.ALL|wx.EXPAND, 5 )
+		rightSizer.Add( self.btnStop, wx.GBPosition( 1, 2 ), wx.GBSpan( 1, 1 ), wx.ALIGN_RIGHT|wx.ALL, 5 )
 		
 		self.chkAuto = wx.CheckBox( self, wx.ID_ANY, u"Auto-play next item", wx.Point( -1,-1 ), wx.DefaultSize, 0 )
-		rightSizer.Add( self.chkAuto, wx.GBPosition( 2, 0 ), wx.GBSpan( 1, 2 ), wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 5 )
+		self.chkAuto.Enable( False )
 		
-		self.lblCountdown = wx.StaticText( self, wx.ID_ANY, u"00:00", wx.DefaultPosition, wx.Size( -1,80 ), wx.ALIGN_CENTRE )
-		self.lblCountdown.Wrap( -1 )
+		rightSizer.Add( self.chkAuto, wx.GBPosition( 2, 1 ), wx.GBSpan( 1, 3 ), wx.ALL|wx.ALIGN_CENTER_HORIZONTAL|wx.EXPAND, 5 )
+		
+		self.lblCountdown = wx.TextCtrl( self, wx.ID_ANY, wx.EmptyString, wx.DefaultPosition, wx.Size( -1,80 ), wx.TE_CENTRE|wx.TE_READONLY|wx.NO_BORDER )
 		self.lblCountdown.SetFont( wx.Font( 40, 70, 90, 90, False, wx.EmptyString ) )
-		self.lblCountdown.SetMaxSize( wx.Size( -1,50 ) )
+		self.lblCountdown.SetForegroundColour( wx.SystemSettings.GetColour( wx.SYS_COLOUR_CAPTIONTEXT ) )
+		self.lblCountdown.SetBackgroundColour( wx.SystemSettings.GetColour( wx.SYS_COLOUR_BTNFACE ) )
+		self.lblCountdown.SetMaxSize( wx.Size( -1,80 ) )
 		
-		rightSizer.Add( self.lblCountdown, wx.GBPosition( 3, 0 ), wx.GBSpan( 1, 2 ), wx.ALL|wx.EXPAND, 5 )
+		rightSizer.Add( self.lblCountdown, wx.GBPosition( 3, 0 ), wx.GBSpan( 1, 3 ), wx.ALL|wx.EXPAND, 5 )
 		
 		self.lblPlayLabel = wx.StaticText( self, wx.ID_ANY, u"Now Playing:", wx.DefaultPosition, wx.DefaultSize, wx.ALIGN_RIGHT )
 		self.lblPlayLabel.Wrap( -1 )
 		rightSizer.Add( self.lblPlayLabel, wx.GBPosition( 5, 0 ), wx.GBSpan( 1, 1 ), wx.ALL|wx.EXPAND, 5 )
 		
-		self.lblPlaying = wx.StaticText( self, wx.ID_ANY, u"None", wx.DefaultPosition, wx.DefaultSize, 0 )
-		self.lblPlaying.Wrap( 100 )
+		self.lblPlaying = wx.StaticText( self, wx.ID_ANY, u"None", wx.DefaultPosition, wx.Size( 150,-1 ), 0 )
+		self.lblPlaying.Wrap( 0 )
 		rightSizer.Add( self.lblPlaying, wx.GBPosition( 5, 1 ), wx.GBSpan( 1, 2 ), wx.ALL, 5 )
 		
 		self.lblLoadLabel = wx.StaticText( self, wx.ID_ANY, u"Loaded:", wx.DefaultPosition, wx.DefaultSize, wx.ALIGN_RIGHT )
@@ -89,20 +92,21 @@ class CorePanel ( wx.Panel ):
 		rightSizer.Add( self.lblLoadLabel, wx.GBPosition( 6, 0 ), wx.GBSpan( 1, 1 ), wx.ALL|wx.EXPAND, 5 )
 		
 		self.lblLoaded = wx.StaticText( self, wx.ID_ANY, u"None", wx.DefaultPosition, wx.DefaultSize, 0 )
-		self.lblLoaded.Wrap( 100 )
-		rightSizer.Add( self.lblLoaded, wx.GBPosition( 6, 1 ), wx.GBSpan( 1, 1 ), wx.ALL, 5 )
+		self.lblLoaded.Wrap( -1 )
+		rightSizer.Add( self.lblLoaded, wx.GBPosition( 6, 1 ), wx.GBSpan( 1, 2 ), wx.ALL|wx.EXPAND, 5 )
 		
-		self.lblConnectedLabel = wx.StaticText( self, wx.ID_ANY, u"Status", wx.DefaultPosition, wx.DefaultSize, wx.ALIGN_RIGHT )
+		self.lblConnectedLabel = wx.StaticText( self, wx.ID_ANY, u"Status:", wx.DefaultPosition, wx.DefaultSize, wx.ALIGN_RIGHT )
 		self.lblConnectedLabel.Wrap( -1 )
 		rightSizer.Add( self.lblConnectedLabel, wx.GBPosition( 7, 0 ), wx.GBSpan( 1, 1 ), wx.ALL|wx.EXPAND, 5 )
 		
 		self.lblConnected = wx.StaticText( self, wx.ID_ANY, u"Not Connected", wx.DefaultPosition, wx.DefaultSize, 0 )
-		self.lblConnected.Wrap( 100 )
-		rightSizer.Add( self.lblConnected, wx.GBPosition( 7, 1 ), wx.GBSpan( 1, 1 ), wx.ALL|wx.EXPAND, 5 )
+		self.lblConnected.Wrap( -1 )
+		rightSizer.Add( self.lblConnected, wx.GBPosition( 7, 1 ), wx.GBSpan( 1, 2 ), wx.ALL|wx.EXPAND, 5 )
 		
 		
 		rightSizer.AddGrowableCol( 0 )
 		rightSizer.AddGrowableCol( 1 )
+		rightSizer.AddGrowableCol( 2 )
 		
 		mainSizer.Add( rightSizer, 0, wx.EXPAND, 5 )
 		

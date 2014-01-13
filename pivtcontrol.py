@@ -15,6 +15,7 @@ class PiVTControl(asynchat.async_chat):
 	
 	playing = ""
 	loaded = ""
+	automode = False
 	connected = False
 	
 	def __init__(self, server, conn_cb, data_cb):
@@ -46,11 +47,13 @@ class PiVTControl(asynchat.async_chat):
 	def get_info(self):
 		if self.connected == True:
 			self.push("i\r\n")
+			sleep(0.5)
 	
 	def stop(self):
 		if self.connected == True:
 			self.push("s\r\n")
 			self.playing = ""
+			sleep(0.5)
 			
 	def play(self):
 		if self.connected == True:
@@ -58,6 +61,7 @@ class PiVTControl(asynchat.async_chat):
 				self.push("p\r\n")
 				self.playing = self.loaded
 				self.loaded = ""
+				sleep(0.5)
 			else:
 				wx.MessageBox('Cannot play with nothing loaded!', 'Error',
 							wx.ICON_ERROR | wx.OK)
@@ -65,7 +69,14 @@ class PiVTControl(asynchat.async_chat):
 	def load(self, filename):
 		if self.connected == True:
 			self.push('l "{0}"\r\n'.format(filename))
-			self.loaded = "filename"
+			self.loaded = filename
+			sleep(0.5)
+			
+	def setauto(self, on):
+		if on ^ self.automode:
+			self.push('m \r\n')
+			self.automode = on
+			sleep(0.5)			
 	
 	def handle_connect(self):
 		print "Connected!"
@@ -91,29 +102,46 @@ class PiVTControl(asynchat.async_chat):
 		if message[0].startswith('200'):
 			# Got a 200 status update
 			playgroups = shlex.split(message[0])
-			print(repr(playgroups))
 			if playgroups[1] == "Playing":
 				self.playing = playgroups[2]
 			else:
 				self.playing = ""
 				
 			loadgroups = shlex.split(message[1])
-			print(repr(loadgroups))
 			if loadgroups[0] == "Loaded":
 				self.loaded = loadgroups[1]
 			else:
 				self.loaded = ""
+				
+			# Was Auto mode enabled?
+			if shlex.split(message[3])[1] == 'True':
+				self.automode = True
+			else:
+				self.automode = False
 				
 			numbers = float(shlex.split(message[2])[0])
 			
 			self.data_cb(numbers)
 			
 		elif message[0].startswith('202'):
-			# 202 Playing - respond with info request for accurate time
+			
+			# Trigger a real update to get some better numbers
 			self.get_info()
 		
+		elif message[0].startswith('203'):
+			# Got a 203 Loaded
+			loadgroups = shlex.split(message[0])
+			self.loaded = loadgroups[2]
+			self.data_cb(None)
+			
 		elif message[0].startswith('204'):
 			splits = shlex.split(message[0])
+			
+			if splits[len(splits)-1] == 'True':
+				self.automode = True
+			else:
+				self.automode = False
+			
 			if splits[1] == 'Stopped':
 				self.playing = ""
 				self.data_cb(None)
@@ -121,7 +149,9 @@ class PiVTControl(asynchat.async_chat):
 				self.playing = splits[2]
 				numbers = float(splits[3])
 				self.data_cb(numbers)
-			
+		
+		elif message[0].startswith('Auto Enabled set to'):
+			pass	
 		else:
 			wx.MessageBox(msg, 'Error', wx.ICON_WARNING | wx.OK)	
 			

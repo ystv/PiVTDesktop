@@ -32,6 +32,11 @@ class Playlist(object):
         
         tree = ElTree.ElementTree(root)
         tree.write(filename)
+        
+    def getCurrentItemName(self):
+        item, duration = self.playlist[self.index]
+        
+        return item
     
     def getNextItem(self):
         if len(self.playlist) == 0:
