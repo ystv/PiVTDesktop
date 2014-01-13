@@ -2,6 +2,7 @@ import wx
 import os
 import threading
 import ctypes
+import platform
 from time import sleep
 
 
@@ -501,8 +502,9 @@ class MainPanel(gui.CorePanel):
                     self.PlaylistRefresh()
 
 
-myappid = 'YSTV.PiVT.PiVTDesktop.2.0' # arbitrary string
-ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+if platform.system() == 'Windows':
+    myappid = 'YSTV.PiVT.PiVTDesktop.2.0' # arbitrary string
+    ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
        
 app = wx.App(False)
 frame = MainWindow()
