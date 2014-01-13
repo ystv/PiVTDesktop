@@ -17,7 +17,7 @@ import wx.xrc
 class CorePanel ( wx.Panel ):
 	
 	def __init__( self, parent ):
-		wx.Panel.__init__ ( self, parent, id = wx.ID_ANY, pos = wx.DefaultPosition, size = wx.Size( 600,352 ), style = wx.TAB_TRAVERSAL )
+		wx.Panel.__init__ ( self, parent, id = wx.ID_ANY, pos = wx.DefaultPosition, size = wx.Size( 667,352 ), style = wx.TAB_TRAVERSAL )
 		
 		mainSizer = wx.BoxSizer( wx.HORIZONTAL )
 		
@@ -115,6 +115,7 @@ class CorePanel ( wx.Panel ):
 		self.Layout()
 		
 		# Connect Events
+		self.lstPlaylist.Bind( wx.EVT_LIST_ITEM_DESELECTED, self.OnPLSelect )
 		self.lstPlaylist.Bind( wx.EVT_LIST_ITEM_SELECTED, self.OnPLSelect )
 		self.btnAdd.Bind( wx.EVT_BUTTON, self.OnAdd )
 		self.btnUp.Bind( wx.EVT_BUTTON, self.OnMoveUp )
@@ -131,6 +132,7 @@ class CorePanel ( wx.Panel ):
 	# Virtual event handlers, overide them in your derived class
 	def OnPLSelect( self, event ):
 		event.Skip()
+	
 	
 	def OnAdd( self, event ):
 		event.Skip()

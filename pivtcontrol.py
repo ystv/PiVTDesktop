@@ -19,11 +19,12 @@ class PiVTControl(asynchat.async_chat):
 	connected = False
 	filelist = None
 	
-	def __init__(self, server, conn_cb, data_cb):
+	def __init__(self, server, conn_cb, data_cb, connfail_cb):
 		splits = server.split(':')
 		self.server = server
 		self.conn_cb = conn_cb
 		self.data_cb = data_cb
+		self.connfail_cb = connfail_cb
 		
 		host = splits[0]
 		port = int(splits[1])
@@ -38,6 +39,7 @@ class PiVTControl(asynchat.async_chat):
 		try:
 			asynchat.async_chat.__init__(self)
 			self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
+			socket.setdefaulttimeout(8)
 			self.connect((host, port))
 		except socket.error, e:
 			wx.MessageBox('Error: {0}'.format(e.message), 'Failed to connect', 
@@ -92,8 +94,6 @@ class PiVTControl(asynchat.async_chat):
 			
 		# Reset flag marking completion status
 		self.updateready = None
-		
-		print(repr(self.filelist))
 		
 		return self.filelist
 	
@@ -185,7 +185,10 @@ class PiVTControl(asynchat.async_chat):
 				self.automode = True
 			else:
 				self.automode = False
-
+		
+		elif message[0].startswith('Shutting down'):
+			self.run = False
+			self.close_when_done()
 		else:
 			wx.MessageBox(msg, 'Error', wx.ICON_WARNING | wx.OK)	
 			
@@ -195,5 +198,17 @@ class PiVTControl(asynchat.async_chat):
 		self.netthread.start()
 			
 	def runner(self):
+		connecttimer = 8
 		while self.run:
 			asyncore.poll(0.1)
+			
+			if self.connected != True:
+				connecttimer = connecttimer - 0.1
+				sleep(0.1)
+				if connecttimer < 0:
+					self.connected = False
+					self.run = False
+					print("Connection failed!")
+					self.connfail_cb()
+					del(self)
+					break

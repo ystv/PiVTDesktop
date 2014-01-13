@@ -42,7 +42,7 @@
             <property name="minimum_size"></property>
             <property name="name">CorePanel</property>
             <property name="pos"></property>
-            <property name="size">600,352</property>
+            <property name="size">667,352</property>
             <property name="subclass"></property>
             <property name="tooltip"></property>
             <property name="window_extra_style"></property>
@@ -176,7 +176,7 @@
                                 <event name="OnListEndLabelEdit"></event>
                                 <event name="OnListInsertItem"></event>
                                 <event name="OnListItemActivated"></event>
-                                <event name="OnListItemDeselected"></event>
+                                <event name="OnListItemDeselected">OnPLSelect</event>
                                 <event name="OnListItemFocused"></event>
                                 <event name="OnListItemMiddleClick"></event>
                                 <event name="OnListItemRightClick"></event>

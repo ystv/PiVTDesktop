@@ -18,7 +18,7 @@ runflag = True
 
 class MainWindow(wx.Frame):
     def __init__(self):
-        wx.Frame.__init__(self, None, title="PiVT Desktop", size=(600,400))
+        wx.Frame.__init__(self, None, title="PiVT Desktop", size=(700,400))
         favicon = wx.Icon('PiVT_icon.ico', wx.BITMAP_TYPE_ICO)
         wx.Frame.SetIcon(self, favicon)
         self.mp = None
@@ -144,7 +144,8 @@ class MainWindow(wx.Frame):
         try: 
             self.mp.networkconn = PiVTControl(self.mp.server, 
                                               self.mp.ConnectionCallback, 
-                                              self.mp.DataCallback)
+                                              self.mp.DataCallback, 
+                                              self.ConnFailCallback)
 
             self.mp.networkconn.startup_async()
         
@@ -153,6 +154,12 @@ class MainWindow(wx.Frame):
             
         except:
             pass
+        
+    def ConnFailCallback(self):
+        self.mp.lblConnected.SetLabel("Not Connected")
+        wx.MessageBox("Connection failed", "Error", wx.ICON_ERROR | wx.OK)
+        self.mnuConnect.Enable(True)
+        self.mnuDisconnect.Enable(False)
         
     def OnDisconnectInstruction(self, event):
         if self.mp.networkconn != None:
@@ -210,7 +217,8 @@ class MainPanel(gui.CorePanel):
         
         # Configure the playlist view
         self.lstPlaylist.InsertColumn(1, "Duration", width=60)
-        self.lstPlaylist.InsertColumn(0, "Filename", width=self.lstPlaylist.GetSize().width - 100)
+        self.lstPlaylist.InsertColumn(2, "Status", width=60)
+        self.lstPlaylist.InsertColumn(0, "Filename", width=250)
         
         # Placeholder for networking
         self.networkconn = None
@@ -232,25 +240,16 @@ class MainPanel(gui.CorePanel):
         for i in range(0, self.lstPlaylist.GetItemCount()):
             
             if self.lstPlaylist.GetItemText(i) == playing:
-                if i == self.lstPlaylist.GetFirstSelected():
-                    self.lstPlaylist.SetItemTextColour(i, 'red')
-                    self.lstPlaylist.SetItemBackgroundColour(i, 'white')
-                else:
-                    self.lstPlaylist.SetItemBackgroundColour(i, 'red')
-                    self.lstPlaylist.SetItemTextColour(i, 'black')
+                self.lstPlaylist.SetItemBackgroundColour(i, 'red')
+                self.lstPlaylist.SetStringItem(i, 2, "Playing")
                     
             elif self.lstPlaylist.GetItemText(i) == loaded:
-                if i == self.lstPlaylist.GetFirstSelected():
-                    self.lstPlaylist.SetItemTextColour(i, 'green')
-                    self.lstPlaylist.SetItemBackgroundColour(i, 'white')
-                else:
-                    self.lstPlaylist.SetItemBackgroundColour(i, 'green')
-                    self.lstPlaylist.SetItemTextColour(i, 'black')
+                self.lstPlaylist.SetItemBackgroundColour(i, 'green')
+                self.lstPlaylist.SetStringItem(i, 2, "Loaded")
                     
-            elif (self.lstPlaylist.GetItemTextColour(i) != 'black' or 
-                self.lstPlaylist.GetItemBackgroundColour(i) != 'white'):
-                    self.lstPlaylist.SetItemTextColour(i, 'black')
-                    self.lstPlaylist.SetItemBackgroundColour(i, 'white')
+            elif self.lstPlaylist.GetItemBackgroundColour(i) != 'white':
+                self.lstPlaylist.SetItemBackgroundColour(i, 'white')
+                self.lstPlaylist.SetStringItem(i, 2, "")
     
     def PlaylistRefresh(self):
         # Clear existing playlist items
@@ -261,9 +260,8 @@ class MainPanel(gui.CorePanel):
             count = self.lstPlaylist.GetItemCount()
             self.lstPlaylist.InsertStringItem(count, filename)
             self.lstPlaylist.SetStringItem(count, 1, str(duration))
-            self.lstPlaylist.SetItemTextColour(count, (255,0,0))
+            self.lstPlaylist.SetStringItem(count, 2, "")
   
-
         # Set selected item
         if self.playlist.index >= 0:
             self.lstPlaylist.Select(self.playlist.index, True)
@@ -339,7 +337,8 @@ class MainPanel(gui.CorePanel):
                     self.clockthread = threading.Thread(target=self.UpdateCountdown)
                     self.clockthread.start()
                     
-            if self.chkAuto.Value == True and self.networkconn.loaded == "":
+            if (self.chkAuto.Value == True and self.networkconn.loaded == "" and 
+                self.lblLoaded.GetLabelText() != 'Please Wait...'):
                 self.OnPlayUpdateFromList()
                 
         else:
@@ -398,11 +397,17 @@ class MainPanel(gui.CorePanel):
                 except AttributeError:
                     pass
             else:
-                self.playlist.index = -1
+                if self.chkAuto.Value == False:
+                    self.playlist.index = -1
         else:
             self.playlist.index = -1
             
     def OnPlayUpdateFromList(self):
+        if self.playlist.index >= len(self.playlist.playlist):
+            self.playlist.index = -1
+            self.OnStop(None)
+            return
+        
         plitem, plduration = self.playlist.playlist[self.playlist.index]
         
         if self.networkconn.playing != plitem:
@@ -483,12 +488,9 @@ class MainPanel(gui.CorePanel):
             
     def OnAdd(self, event):
         dlgAdd = dlgAddItems(self)
-        print("Launching")
         filelist = self.networkconn.getfilelist()
-        print("Listed")
         for item, duration in filelist:
             dlgAdd.ddVideoList.Append(item)
-        print ("Append")           
         
         if dlgAdd.ShowModal() == wx.ID_OK:
             if self.lstPlaylist.SelectedItemCount > 0:
