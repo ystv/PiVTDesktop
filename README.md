@@ -36,3 +36,15 @@ Configuration
 -----------------
 A configuration file is provided and will be updated internally by the system
 
+Changelog
+------------
+
+## v2.0 (16/01/2014) ##
+- Complete rewrite to use Python and cross-platform wxPython framework
+- Countdown clock now adjusts to count accurately in step with server
+- Play/Stop buttons will disable when action not possible (no video loaded/playing)
+- Auto-play option simplified
+- Loaded videos highlight green, playing red when not selected in playlist
+- Countdown clock will be triggered even if playback started by another client
+- Adding playlist items now much faster due to PiVT 2.0 improvements
+- Playlist load/save logic improved 
