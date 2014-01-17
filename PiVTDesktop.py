@@ -3,6 +3,7 @@ import os
 import threading
 import ctypes
 import platform
+import yaml
 from time import sleep
 
 
@@ -12,7 +13,7 @@ from playlist import Playlist
 from pivtcontrol import PiVTControl
 from gui import dlgConnectOptions, dlgAddItems
 
-DEFAULTSERVER = 'sn-pi:9815'
+CONFIGPATH = 'config.yaml'
 
 runflag = True
 
@@ -61,10 +62,24 @@ class MainWindow(wx.Frame):
         # Titlebar close
         self.Bind(wx.EVT_CLOSE, self.OnClose)
         
+    def SaveConfigData(self, key, value):
+        try:
+            with open(CONFIGPATH, 'r') as f:
+                configdata = yaml.load(f)
+                configdata[key] = value
+                
+            with open(CONFIGPATH, 'w') as f:
+                f.write(yaml.dump(configdata))
+        except:
+            wx.MessageBox("Unable to find config file", "Warning", wx.ICON_WARNING | wx.OK)
+        
     def OnOpen(self, event):
         dlg = wx.FileDialog(self, "Choose a playlist", os.getcwd(), "", "*.xml", wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
             self.mp.plpath = dlg.GetPath()
+            
+            # Save path to config file
+            self.SaveConfigData('path', os.path.dirname(self.mp.plpath))
             
             try:
                 self.mp.playlist.loadPlaylist(self.mp.plpath)
@@ -93,6 +108,9 @@ class MainWindow(wx.Frame):
         dlg = wx.FileDialog(self, "Save playlist as", os.getcwd(), "", "*.xml", wx.SAVE)
         if dlg.ShowModal() == wx.ID_OK:
             self.mp.plpath = dlg.GetPath()
+            
+            # Save path to config file
+            self.SaveConfigData('path', os.path.dirname(self.mp.plpath))
             
             try:
                 self.mp.playlist.savePlaylist(self.mp.plpath)
@@ -195,6 +213,9 @@ class MainWindow(wx.Frame):
         if dlgopt.ShowModal() == wx.ID_OK:
             self.mp.server = "{0}:{1}".format(dlgopt.txtServer.Value, dlgopt.txtPort.Value)
             
+            # Save server to config file
+            self.SaveConfigData('server', os.path.dirname(self.mp.server))
+            
             self.OnDisconnectInstruction(None)
             self.OnConnectInstruction(None)
     
@@ -203,12 +224,12 @@ class MainWindow(wx.Frame):
 
 
 class MainPanel(gui.CorePanel):
-    def __init__(self, parent): 
+    def __init__(self, parent, server): 
         gui.CorePanel.__init__(self, parent)   
-            
+        
         self.playlist = Playlist()
         self.plpath = ""
-        self.server = DEFAULTSERVER
+        self.server = server
         self.statusthread = None
         self.clock = -1
         self.clockthread = None
@@ -222,6 +243,7 @@ class MainPanel(gui.CorePanel):
         
         # Placeholder for networking
         self.networkconn = None
+    
         
     def StatusHighlightSet(self):
         '''Run through playlist and highlight loaded and playing rows'''
@@ -503,14 +525,33 @@ class MainPanel(gui.CorePanel):
                     self.playlist.addItem(item, int(round(duration)), )
                     self.PlaylistRefresh()
 
-
+# Reconfigure so the icon is correct on Windows
 if platform.system() == 'Windows':
     myappid = 'YSTV.PiVT.PiVTDesktop.2.0' # arbitrary string
     ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
        
+       
+# Try and read a config file
+server = ''
+defaultpath = os.getcwd()
+try:
+    with open(CONFIGPATH, 'r') as f:
+        configdata = yaml.load(f)
+        server = configdata['server']
+        defaultpath = configdata['path']
+        if defaultpath == '':
+            defaultpath = os.getcwd()
+except IOError:
+    print "Where's my config file gone??"
+
+# Small hack so working directory changes don't break config file
+CONFIGPATH = os.path.join(os.getcwd(), CONFIGPATH)
+    
+# App setup and run
 app = wx.App(False)
 frame = MainWindow()
-panel = MainPanel(frame)
+panel = MainPanel(frame, server)
 frame.mp = panel
+os.chdir(defaultpath)
 frame.Show()
 app.MainLoop() 
