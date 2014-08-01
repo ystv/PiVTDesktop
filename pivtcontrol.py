@@ -1,5 +1,5 @@
 import asyncore
-import asynchat
+import asynchat2
 import socket
 import shlex
 import wx
@@ -7,7 +7,7 @@ import threading
 from time import sleep
 import re
 
-class PiVTControl(asynchat.async_chat):
+class PiVTControl(asynchat2.async_chat):
 	"""Sends messages to a VT servers and handles status update responses
 	
 	"""
@@ -36,9 +36,9 @@ class PiVTControl(asynchat.async_chat):
 		self.databuffer = []
 		
 		try:
-			asynchat.async_chat.__init__(self)
+			asynchat2.async_chat.__init__(self)
 			self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
-			socket.setdefaulttimeout(4)
+			socket.setdefaulttimeout(15)
 			self.connect((host, port))
 		except socket.error, e:
 			wx.MessageBox('Error: {0}'.format(e.message), 'Failed to connect', 
