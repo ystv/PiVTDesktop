@@ -64,16 +64,20 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_CLOSE, self.OnClose)
         
     def SaveConfigData(self, key, value):
-        #try:
-        with open(CONFIGPATH, 'r') as f:
-            configdata = yaml.load(f)
+        try:
+            with open(CONFIGPATH, 'r') as f:
+                configdata = yaml.load(f)
+                configdata[key] = value
+        except (IOError, TypeError):
+            configdata = {}
+            configdata['server'] = ''
+            configdata['path'] = ''
             configdata[key] = value
             
         with open(CONFIGPATH, 'w') as f:
             f.write(yaml.dump(configdata))
-        #except:
-            #wx.MessageBox("Unable to find config file", "Warning", wx.ICON_WARNING | wx.OK)
-        
+
+
     def OnOpen(self, event):
         dlg = wx.FileDialog(self, "Choose a playlist", os.getcwd(), "", "*.xml", wx.OPEN)
         if dlg.ShowModal() == wx.ID_OK:
@@ -551,6 +555,11 @@ class MainPanel(gui.CorePanel):
     def OnAdd(self, event):
         dlgAdd = dlgAddItems(self)
         filelist = self.networkconn.getfilelist()
+        
+        if (filelist == None):
+            wx.MessageBox("Error getting file list, try again later")
+            return
+        
         for item, duration in filelist:
             dlgAdd.ddVideoList.Append(item)
         
@@ -589,7 +598,8 @@ try:
             defaultpath = os.getcwd()
 except IOError:
     print "Where's my config file gone??"
-
+except TypeError:
+    print "Config file invalid"
 # Small hack so working directory changes don't break config file
 CONFIGPATH = os.path.join(os.getcwd(), CONFIGPATH)
     
@@ -598,6 +608,11 @@ app = wx.App(False)
 frame = MainWindow()
 panel = MainPanel(frame, server)
 frame.mp = panel
-os.chdir(defaultpath)
+
+try:
+    os.chdir(defaultpath)
+except OSError:
+    defaultpath = os.getcwd()
+    
 frame.Show()
 app.MainLoop() 

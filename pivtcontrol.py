@@ -88,8 +88,12 @@ class PiVTControl(asynchat2.async_chat):
 		self.push('g \r\n')
 		
 		# Wait for file listing to complete in network thread
+		timeout = 50
 		while self.updateready == False:
 			sleep(0.1)
+			timeout -= 1
+			if (timeout <= 0):
+				return None
 			
 		# Reset flag marking completion status
 		self.updateready = None
