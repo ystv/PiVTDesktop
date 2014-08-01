@@ -5,7 +5,8 @@ import ctypes
 import platform
 import yaml
 from time import sleep
-
+from datetime import datetime
+from time import mktime
 
 import gui
 
@@ -63,15 +64,15 @@ class MainWindow(wx.Frame):
         self.Bind(wx.EVT_CLOSE, self.OnClose)
         
     def SaveConfigData(self, key, value):
-        try:
-            with open(CONFIGPATH, 'r') as f:
-                configdata = yaml.load(f)
-                configdata[key] = value
-                
-            with open(CONFIGPATH, 'w') as f:
-                f.write(yaml.dump(configdata))
-        except:
-            wx.MessageBox("Unable to find config file", "Warning", wx.ICON_WARNING | wx.OK)
+        #try:
+        with open(CONFIGPATH, 'r') as f:
+            configdata = yaml.load(f)
+            configdata[key] = value
+            
+        with open(CONFIGPATH, 'w') as f:
+            f.write(yaml.dump(configdata))
+        #except:
+            #wx.MessageBox("Unable to find config file", "Warning", wx.ICON_WARNING | wx.OK)
         
     def OnOpen(self, event):
         dlg = wx.FileDialog(self, "Choose a playlist", os.getcwd(), "", "*.xml", wx.OPEN)
@@ -179,7 +180,11 @@ class MainWindow(wx.Frame):
         self.mnuConnect.Enable(True)
         self.mnuDisconnect.Enable(False)
         
-    def OnDisconnectInstruction(self, event):
+        # Reset after disconnect
+        self.OnDisconnectInstruction()
+        
+        
+    def OnDisconnectInstruction(self, event=None):
         if self.mp.networkconn != None:
             self.mp.networkconn.run = False
             self.mp.networkconn = None
@@ -198,6 +203,10 @@ class MainWindow(wx.Frame):
         self.mp.statusthread = None
         self.mp.clock = -1
         self.mp.clockthread = None
+        
+        self.mp.lblCountdown.Show(False)
+        
+        self.mp.StatusHighlightSet()
     
     def OnConnectOptions(self, event):
         dlgopt = dlgConnectOptions(self)
@@ -214,7 +223,7 @@ class MainWindow(wx.Frame):
             self.mp.server = "{0}:{1}".format(dlgopt.txtServer.Value, dlgopt.txtPort.Value)
             
             # Save server to config file
-            self.SaveConfigData('server', os.path.dirname(self.mp.server))
+            self.SaveConfigData('server', self.mp.server)
             
             self.OnDisconnectInstruction(None)
             self.OnConnectInstruction(None)
@@ -231,7 +240,10 @@ class MainPanel(gui.CorePanel):
         self.plpath = ""
         self.server = server
         self.statusthread = None
-        self.clock = -1
+        
+        # Time in milliseconds since epoch when VT finishes
+        self.endtime = -1
+        
         self.clockthread = None
         # Flag to store whether playlist is modified
         self.plmodded = False
@@ -254,9 +266,19 @@ class MainPanel(gui.CorePanel):
             else:
                 playing = ""
                 loaded = ""
+                
+                for i in range(0, self.lstPlaylist.GetItemCount()):
+                    if self.lstPlaylist.GetItemBackgroundColour(i) != 'white':
+                        self.lstPlaylist.SetItemBackgroundColour(i, 'white')
+                        self.lstPlaylist.SetStringItem(i, 2, "")
         except AttributeError:
             loaded = ""
             playing = ""
+            
+            for i in range(0, self.lstPlaylist.GetItemCount()):
+                if self.lstPlaylist.GetItemBackgroundColour(i) != 'white':
+                    self.lstPlaylist.SetItemBackgroundColour(i, 'white')
+                    self.lstPlaylist.SetStringItem(i, 2, "")
         
         # Clear all markers (complicated to prevent flicker from unneeded updates)
         for i in range(0, self.lstPlaylist.GetItemCount()):
@@ -303,38 +325,43 @@ class MainPanel(gui.CorePanel):
                 
     def UpdateCountdown(self):
         self.lblCountdown.Show(True)
-        while self.clock > 0:
+        
+        dt = datetime.now()
+        remtime = self.endtime - (mktime(dt.timetuple()) + dt.microsecond/1000000.0)
+        
+        while self.endtime != None:            
             # Update the text countdown
-            m, s = divmod(self.clock, 60)
+            m, s = divmod(remtime, 60)
             self.lblCountdown.SetLabel("{0:02d}:{1:02d}".format(int(round(m)), 
                                                            int(round(s))))
 
             # Set some colours on the clock
-            if self.clock <= 10:
+            if remtime <= 10:
                 self.lblCountdown.SetForegroundColour((255,0,0))
-            elif self.clock <= 30:
+            elif remtime <= 30:
                 self.lblCountdown.SetForegroundColour((255,99,71))
             else:
                 self.lblCountdown.SetForegroundColour((0, 0, 0))
 
-            # This aims to count whole seconds until video end
-            x = self.clock % 1
-            if x < 0.2:
-                x = x + 1
-                
-            self.clock = self.clock - x
-            sleep(x)
+            # Calculate remaining time in seconds
+            dt = datetime.now()
+            
+            try:
+                remtime = self.endtime - (mktime(dt.timetuple()) + dt.microsecond/1000000.0)
+            except TypeError:
+                break
+            
+            if (remtime <= 0):
+                break
+
+            # Sleep a while, don't hammer the CPU
+            sleep(0.1)
             
         # Clean up when timer runs out
         self.lblCountdown.Show(False)
         self.lblPlaying.SetLabel("None")
-        self.clock = None
+        self.endtime = None
         self.clockthread = None
-        
-        # Handle an auto play if set
-        if self.chkAuto.Value == True:
-            self.networkconn.playing = self.networkconn.loaded
-            self.OnPlayUpdateFromList()
     
     def ConnectionCallback(self):
         self.lblConnected.SetLabel("Connected to {0}".format(self.server))
@@ -347,34 +374,42 @@ class MainPanel(gui.CorePanel):
         # Set the loaded item
         self.OnPLSelect(None)
         
-    def DataCallback(self, seconds):
+    def DataCallback(self, seconds, changeover=False):
+        """Handle updated data from server. Set changeover true to auto-advance"""
         if self.networkconn.playing != "":
             self.lblPlaying.SetLabel(self.networkconn.playing)
             self.btnStop.Enable(True)
             self.chkAuto.Enable(True)
             
             if seconds != None:
-                self.clock = seconds
+                self.endtime = calculate_end(seconds)
                 if self.clockthread == None:
                     self.clockthread = threading.Thread(target=self.UpdateCountdown)
                     self.clockthread.start()
                     
-            if (self.chkAuto.Value == True and self.networkconn.loaded == "" and 
-                self.lblLoaded.GetLabelText() != 'Please Wait...'):
+            if (self.chkAuto.Value == True and changeover == True):
                 self.OnPlayUpdateFromList()
-                
+
         else:
             self.lblPlaying.SetLabel("None")
             self.lblCountdown.Show(False)
             self.btnStop.Enable(False)
             
-            if self.clock != -1:
-                self.clock = -1
+            if self.endtime != None:
+                self.endtime = None
                 self.clockthread = None
             
         if self.networkconn.loaded != "":
             self.lblLoaded.SetLabel(self.networkconn.loaded)
             self.btnPlay.Enable(True)
+            
+            if (self.networkconn.playing == ""):
+                m, s = divmod(seconds, 60)
+                self.lblCountdown.SetLabel("{0:02d}:{1:02d}".format(int(round(m)), 
+                                                                    int(round(s))))
+                self.lblCountdown.SetForegroundColour((0, 0, 0))
+                self.lblCountdown.Show(True)
+            
         else:
             self.lblLoaded.SetLabel("None")
             self.btnPlay.Enable(False)
@@ -438,28 +473,22 @@ class MainPanel(gui.CorePanel):
                     plitem = item
                     plduration = duration
                     
-        if self.networkconn.playing == plitem:
-            # Fix the clock
-            self.clock = float(plduration)
-            if self.clockthread == None:
-                self.clockthread = threading.Thread(target=self.UpdateCountdown)
-                self.clockthread.start()
-                
+        if self.networkconn.playing == plitem:                
             # Deselect current item
             self.lstPlaylist.Select(self.lstPlaylist.GetFirstSelected(), False)
             
             # Change the checkbox label to play selected
             self.chkAuto.SetLabel('Auto-play next item')
-            
-            # Load the next playlist item if requested
-            if self.chkAuto.Value == True:
-                item, duration = self.playlist.getNextItem()
-                self.networkconn.load(item)
-                self.lblLoaded.SetLabel('Please Wait...')
-                self.btnPlay.Enable(False)
                 
             # Update the status markers
             self.StatusHighlightSet()
+            
+            # Load next if needed
+            if (self.chkAuto.Value == True and self.networkconn.loaded == ""):
+                item, duration = self.playlist.getNextItem(advance=True)
+                self.networkconn.load(item)
+                self.lblLoaded.SetLabel('Please Wait...')
+                self.btnPlay.Enable(False)
         else:
             self.lblLoaded.SetLabel("None")
             self.btnPlay.Enable(False)
@@ -483,7 +512,7 @@ class MainPanel(gui.CorePanel):
         self.btnStop.Enable(False)
         self.lblPlaying.SetLabel("None")
         self.lblCountdown.Show(False)
-        self.clock = -1
+        self.endtime = None
         self.chkAuto.SetLabel('Auto-play next item')
         self.chkAuto.Value = False
         self.chkAuto.Enable(False)
@@ -494,12 +523,23 @@ class MainPanel(gui.CorePanel):
         try:
             if self.networkconn.connected == True:
                 self.networkconn.setauto(self.chkAuto.Value)
-                if (self.networkconn.loaded == ""):
-                    # Load the next playlist item if requested
-                    item, duration = self.playlist.getNextItem()
-                    self.networkconn.load(item)
-                    self.lblLoaded.SetLabel('Please Wait...')
-                    self.btnPlay.Enable(False)
+                
+                if (self.chkAuto.Value == True):
+                    # Set current selection in playlist if not set already
+                    if (self.playlist.index == -1):
+                        if (self.networkconn.playing != ""):
+                            for i in range(0, len(self.playlist.playlist)):
+                                item, duration = self.playlist.playlist[i]
+                                if item == self.networkconn.playing:
+                                    self.playlist.index = i
+                                    break
+
+                    if (self.networkconn.loaded == ""):
+                        # Load the next playlist item if requested
+                        item, duration = self.playlist.getNextItem(advance=True)
+                        self.networkconn.load(item)
+                        self.lblLoaded.SetLabel('Please Wait...')
+                        self.btnPlay.Enable(False)
             else:
                 self.GetParent().OnDisconnectInstruction()
                 raise AttributeError
@@ -524,6 +564,12 @@ class MainPanel(gui.CorePanel):
                 if item == dlgAdd.ddVideoList.GetStringSelection():
                     self.playlist.addItem(item, int(round(duration)), )
                     self.PlaylistRefresh()
+
+def calculate_end(time):
+    """Calculate the end time in seconds since epoch based on a time from now """
+    dt = datetime.now()
+    currenttime = mktime(dt.timetuple()) + dt.microsecond/1000000.0
+    return currenttime + time
 
 # Reconfigure so the icon is correct on Windows
 if platform.system() == 'Windows':

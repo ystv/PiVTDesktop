@@ -1,4 +1,3 @@
-import logging
 import asyncore
 import asynchat
 import socket
@@ -39,7 +38,7 @@ class PiVTControl(asynchat.async_chat):
 		try:
 			asynchat.async_chat.__init__(self)
 			self.create_socket(socket.AF_INET, socket.SOCK_STREAM)
-			socket.setdefaulttimeout(8)
+			socket.setdefaulttimeout(4)
 			self.connect((host, port))
 		except socket.error, e:
 			wx.MessageBox('Error: {0}'.format(e.message), 'Failed to connect', 
@@ -56,7 +55,7 @@ class PiVTControl(asynchat.async_chat):
 		if self.connected == True:
 			self.push("s\r\n")
 			self.playing = ""
-			sleep(0.5)
+			sleep(0.1)
 			
 	def play(self):
 		if self.connected == True:
@@ -64,7 +63,7 @@ class PiVTControl(asynchat.async_chat):
 				self.push("p\r\n")
 				self.playing = self.loaded
 				self.loaded = ""
-				sleep(0.5)
+				#sleep(0.5)
 			else:
 				wx.MessageBox('Cannot play with nothing loaded!', 'Error',
 							wx.ICON_ERROR | wx.OK)
@@ -73,13 +72,13 @@ class PiVTControl(asynchat.async_chat):
 		if self.connected == True:
 			self.push('l "{0}"\r\n'.format(filename))
 			self.loaded = filename
-			sleep(0.5)
+			#sleep(0.5)
 			
 	def setauto(self, on):
 		if on ^ self.automode:
 			self.push('m \r\n')
 			self.automode = on
-			sleep(0.5)			
+			#sleep(0.5)			
 			
 	def getfilelist(self):
 		# Prepare for new update
@@ -113,6 +112,8 @@ class PiVTControl(asynchat.async_chat):
 		if msg.startswith("Welcome to PiVT"):
 			return
 		
+		# Split the returned line into comma separted blocks. Do not split on
+		# commas in quotes
 		message = re.split(',(?=(?:[^"]*"[^"]*")*[^"]*$)', msg)
 		
 		if len(message) < 1:
@@ -138,7 +139,10 @@ class PiVTControl(asynchat.async_chat):
 			else:
 				self.automode = False
 				
-			numbers = float(shlex.split(message[2])[0])
+			try:
+				numbers = float(shlex.split(message[2])[0])
+			except ValueError:
+				numbers = 0
 			
 			self.data_cb(numbers)
 			
@@ -151,7 +155,16 @@ class PiVTControl(asynchat.async_chat):
 			# Got a 203 Loaded
 			loadgroups = shlex.split(message[0])
 			self.loaded = loadgroups[2]
-			self.data_cb(None)
+			
+			if (self.playing == ""):
+				try:
+					numbers = float(shlex.split(message[1])[0])
+				except ValueError:
+					numbers = 0
+			else:
+				numbers = None
+			
+			self.data_cb(numbers)
 			
 		elif message[0].startswith('204'):
 			splits = shlex.split(message[0])
@@ -165,11 +178,23 @@ class PiVTControl(asynchat.async_chat):
 			
 			if splits[1] == 'Stopped':
 				self.playing = ""
-				self.data_cb(None)
+				
+				# Check for a loaded video
+				loadgroups = shlex.split(message[1])
+				if loadgroups[0] == "Loaded":
+					self.loaded = loadgroups[1]
+					
+					numbers = float(shlex.split(message[2])[0])
+				else:
+					self.loaded = ""
+					numbers = None
+				
+				self.data_cb(numbers)
 			else:
 				self.playing = splits[2]
 				numbers = float(splits[3])
-				self.data_cb(numbers)
+				self.loaded = ""
+				self.data_cb(numbers, changeover=True)
 		
 		elif message[0].startswith('205'):
 			# 205 File listing complete

@@ -6,7 +6,7 @@
 
 !define APP_NAME "PiVTDesktop 2"
 !define COMP_NAME "YSTV"
-!define VERSION "2.0.0.0"
+!define VERSION "2.1.0.0"
 !define COPYRIGHT "YSTV  © 2014"
 !define DESCRIPTION "PIVTDesktop Client"
 !define LICENSE_TXT "COPYING.txt"

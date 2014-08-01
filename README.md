@@ -38,6 +38,9 @@ A configuration file is provided and will be updated internally by the system
 
 Changelog
 ------------
+## v2.1 (01/08/2014) ##
+- Stability improvements
+- Works with PiVT 2.1.0
 
 ## v2.0 (16/01/2014) ##
 - Complete rewrite to use Python and cross-platform wxPython framework

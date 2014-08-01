@@ -38,19 +38,24 @@ class Playlist(object):
         
         return item
     
-    def getNextItem(self):
+    def getNextItem(self, advance=False):
         if len(self.playlist) == 0:
             return -1
             self.index = -1
         
-        self.index = self.index + 1
+        index = self.index + 1
         
-        if len(self.playlist) <= self.index:
-            self.index = 0
-            return self.playlist[0]
+        if len(self.playlist) <= index:
+            index = 0
+            ret = self.playlist[0]
         else:
-            return self.playlist[self.index]
-        
+            ret = self.playlist[index]
+            
+        if (advance == True):
+            self.index = index
+            
+        return ret        
+    
     def addItem(self, filename, length, index=-1):
         if index == -1:
             index = len(self.playlist)
