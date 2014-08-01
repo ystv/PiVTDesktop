@@ -38,6 +38,9 @@ A configuration file is provided and will be updated internally by the system
 
 Changelog
 ------------
+## v2.1.1 (01/08/2014) ##
+- Switched to modified asnychat library to fix intermittent network crash
+
 ## v2.1 (01/08/2014) ##
 - Stability improvements
 - Works with PiVT 2.1.0
