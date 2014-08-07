@@ -335,7 +335,7 @@ class MainPanel(gui.CorePanel):
         
         while self.endtime != None:            
             # Update the text countdown
-            m, s = divmod(remtime, 60)
+            m, s = divmod(round(remtime), 60)
             self.lblCountdown.SetLabel("{0:02d}:{1:02d}".format(int(round(m)), 
                                                            int(round(s))))
 
@@ -408,7 +408,7 @@ class MainPanel(gui.CorePanel):
             self.btnPlay.Enable(True)
             
             if (self.networkconn.playing == ""):
-                m, s = divmod(seconds, 60)
+                m, s = divmod(round(seconds), 60)
                 self.lblCountdown.SetLabel("{0:02d}:{1:02d}".format(int(round(m)), 
                                                                     int(round(s))))
                 self.lblCountdown.SetForegroundColour((0, 0, 0))

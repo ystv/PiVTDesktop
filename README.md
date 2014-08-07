@@ -38,6 +38,9 @@ A configuration file is provided and will be updated internally by the system
 
 Changelog
 ------------
+## v2.1.2 (07/08/2014) ##
+- Fixed a rounding bug causing a remaining time of (for example) 01:60 briefly
+
 ## v2.1.1 (01/08/2014) ##
 - Switched to modified asnychat library to fix intermittent network crash
 
