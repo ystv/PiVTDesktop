@@ -38,6 +38,9 @@ A configuration file is provided and will be updated internally by the system
 
 Changelog
 ------------
+## v2.1.3 (13/08/2014) ##
+- UI correctly disables on disconnect, auto checkbox is cleared on play now
+
 ## v2.1.2 (07/08/2014) ##
 - Fixed a rounding bug causing a remaining time of (for example) 01:60 briefly
 

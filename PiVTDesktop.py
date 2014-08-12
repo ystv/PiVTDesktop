@@ -203,6 +203,8 @@ class MainWindow(wx.Frame):
         self.mp.btnPlay.Enable(False)
         self.mp.btnStop.Enable(False)
         self.mp.btnAdd.Enable(False)
+        self.mp.chkAuto.SetValue(False)
+        self.mp.chkAuto.Enable(False)
         
         self.mp.statusthread = None
         self.mp.clock = -1
@@ -507,6 +509,9 @@ class MainPanel(gui.CorePanel):
         self.btnStop.Enable(True)
         self.chkAuto.Enable(True)
         
+        # Make sure auto state cleared on server
+        self.networkconn.setauto(False)
+        
         # Update playing statuses from playlist
         self.OnPlayUpdateFromList()
 
@@ -518,7 +523,7 @@ class MainPanel(gui.CorePanel):
         self.lblCountdown.Show(False)
         self.endtime = None
         self.chkAuto.SetLabel('Auto-play next item')
-        self.chkAuto.Value = False
+        self.chkAuto.SetValue(False)
         self.chkAuto.Enable(False)
         self.networkconn.setauto(False)
         self.StatusHighlightSet()
